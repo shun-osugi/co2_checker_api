@@ -1,0 +1,18 @@
+name: Run Scheduled Prediction
+
+on:
+  schedule:
+    # 15分ごとに実行
+    - cron: '*/15 * * * *'
+  
+  # 手動でも実行できるようにする
+  workflow_dispatch:
+
+jobs:
+  trigger-prediction:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Prediction Endpoint
+        run: >
+          curl -X POST "${{ secrets.RENDER_APP_URL }}/trigger-prediction" \
+          -H "X-Trigger-Secret: ${{ secrets.TRIGGER_SECRET_KEY }}"

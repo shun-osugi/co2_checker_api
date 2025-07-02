@@ -2,11 +2,11 @@ import joblib
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from pydantic import BaseModel, Field
 from typing import List
 from datetime import datetime
-
+import os
 # --------------------------------------------------------------------------
 # 1. FastAPIアプリケーションのインスタンス化
 # --------------------------------------------------------------------------
@@ -89,3 +89,26 @@ def predict(request: PredictionRequest):
     final_prediction = inverse_transform_co2(scaled_prediction)
 
     return PredictionResponse(predicted_co2=round(final_prediction, 2))
+
+# --------------------------------------------------------------------------
+# 5. GitHub Actionsから呼び出されるトリガーエンドポイント
+# --------------------------------------------------------------------------
+# Renderの環境変数から、設定した秘密のキーを取得
+TRIGGER_SECRET = os.environ.get("TRIGGER_SECRET_KEY")
+
+@app.post("/trigger-prediction")
+async def trigger_prediction(x_trigger_secret: str = Header(None)):
+    print("Received a request on /trigger-prediction")
+    
+    # リクエストのヘッダーに含まれる秘密のキーが、設定したものと一致するかチェック
+    if TRIGGER_SECRET is None or x_trigger_secret != TRIGGER_SECRET:
+        print("Unauthorized access attempt.")
+        # 一致しない場合は、401 Unauthorizedエラーを返す
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    # --- ここに、本来の予測と通知のロジックが入る ---
+    # 今回は、まず動作確認のためにログを出すだけ
+    print("✅ Trigger successful! Prediction logic would run here.")
+    # ---------------------------------------------
+    
+    return {"message": "Prediction trigger received successfully."}
