@@ -5,18 +5,7 @@ import pandas as pd
 import tensorflow as tf  # <-- 修正点1: tflite_runtimeから変更
 from datetime import datetime
 import pytz
-
-# （補助関数 get_latest_airoco_data, inverse_transform_co2 は変更なし）
-def get_latest_airoco_data() -> list[dict]:
-    print("Airocoデータ取得中（現在はダミーデータを生成）...")
-    jst = pytz.timezone('Asia/Tokyo')
-    timestamps = pd.to_datetime([pd.Timestamp.now(jst) - pd.Timedelta(minutes=x*5) for x in range(72)])
-    timestamps = timestamps.sort_values()
-    dummy_data = [
-        {"timestamp": ts, "co2": 450 + (i*2) + np.random.randint(-5, 5), "temperature": 25.0 + np.random.rand(), "humidity": 60.0 + np.random.rand()}
-        for i, ts in enumerate(timestamps)
-    ]
-    return dummy_data
+from get_airoco_data import get_latest_airoco_data
 
 def inverse_transform_co2(scaled_value, original_scaler, num_features):
     dummy_array = np.zeros((1, num_features))
