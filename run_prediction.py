@@ -6,6 +6,13 @@ import tensorflow as tf  # <-- 修正点1: tflite_runtimeから変更
 from datetime import datetime
 import pytz
 from get_airoco_data import get_latest_airoco_data
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+def initialize_firestore():
+    cred = credentials.Certificate("firebase-key.json")
+    firebase_admin.initialize_app(cred)
+    return firestore.client()
 
 def inverse_transform_co2(scaled_value, original_scaler, num_features):
     dummy_array = np.zeros((1, num_features))
@@ -15,6 +22,8 @@ def inverse_transform_co2(scaled_value, original_scaler, num_features):
 def main():
     print("--- 予測ジョブを開始します ---")
     try:
+        db = initialize_firestore()
+
         # Step 1: モデルとスケーラーをロード
         interpreter = tf.lite.Interpreter(model_path='co2_model.tflite')  # <-- 修正点2: Interpreter -> tf.lite.Interpreter
         interpreter.allocate_tensors()
@@ -47,7 +56,14 @@ def main():
         final_prediction = inverse_transform_co2(scaled_prediction, scaler, len(feature_order))
         print(f"✅ 予測成功！ 15分後のCO2濃度予測値: {final_prediction:.2f} ppm")
 
-        # Step 5: 閾値と比較 (将来の通知機能のため)
+        # Step 5: Firebase Firestoreに保存
+        doc_ref = db.collection("co2-prediction").document("TWNDdsILjaOACEoFemFx")
+        doc_ref.set({
+            "latest": float(final_prediction),
+        }, merge=True)
+        print("✅ Firestore に保存完了")
+
+        # Step 6: 閾値と比較 (将来の通知機能のため)
         CO2_THRESHOLD = 1000
         if final_prediction > CO2_THRESHOLD:
             print(f"⚠️ 警報: 予測値が閾値({CO2_THRESHOLD} ppm)を超えました。")
