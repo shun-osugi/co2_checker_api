@@ -23,5 +23,9 @@ jobs:
       - name: 必要なライブラリをインストール
         run: pip install -r requirements.txt
 
+      - name: Write Firebase credential JSON
+        run: |
+          echo "${{ secrets.FIREBASE_CREDENTIAL_JSON }}" | base64 -d > firebase-key.json
+
       - name: 予測スクリプトを実行
         run: python run_prediction.py
