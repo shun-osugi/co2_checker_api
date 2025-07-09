@@ -2,15 +2,12 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
-from tflite_runtime.interpreter import Interpreter
+import tensorflow as tf  # <-- 修正点1: tflite_runtimeから変更
 from datetime import datetime
 import pytz
 
-# --------------------------------------------------------------------------
-# 補助関数
-# --------------------------------------------------------------------------
+# （補助関数 get_latest_airoco_data, inverse_transform_co2 は変更なし）
 def get_latest_airoco_data() -> list[dict]:
-    # !!! この部分は、将来的にAirocoからデータを取得する実際の処理に置き換えます !!!
     print("Airocoデータ取得中（現在はダミーデータを生成）...")
     jst = pytz.timezone('Asia/Tokyo')
     timestamps = pd.to_datetime([pd.Timestamp.now(jst) - pd.Timedelta(minutes=x*5) for x in range(72)])
@@ -26,19 +23,11 @@ def inverse_transform_co2(scaled_value, original_scaler, num_features):
     dummy_array[:, 0] = scaled_value
     return original_scaler.inverse_transform(dummy_array)[0, 0]
 
-# --------------------------------------------------------------------------
-# メインの処理
-# --------------------------------------------------------------------------
 def main():
-    """
-    15分ごとに実行されるメインの処理。
-    モデルのロード、データ取得、予測、結果の表示を行う。
-    """
     print("--- 予測ジョブを開始します ---")
-    
     try:
         # Step 1: モデルとスケーラーをロード
-        interpreter = Interpreter(model_path='co2_model.tflite')
+        interpreter = tf.lite.Interpreter(model_path='co2_model.tflite')  # <-- 修正点2: Interpreter -> tf.lite.Interpreter
         interpreter.allocate_tensors()
         input_details = interpreter.get_input_details()
         output_details = interpreter.get_output_details()
@@ -51,16 +40,13 @@ def main():
         input_df['timestamp'] = pd.to_datetime(input_df['timestamp'])
         input_df.set_index('timestamp', inplace=True)
         input_df.rename(columns={'co2': 'CO2', 'temperature': '温度', 'humidity': '湿度'}, inplace=True)
-        
         input_df['hour_sin'] = np.sin(2 * np.pi * input_df.index.hour / 24)
         input_df['hour_cos'] = np.cos(2 * np.pi * input_df.index.hour / 24)
         input_df['dayofweek_sin'] = np.sin(2 * np.pi * input_df.index.dayofweek / 7)
         input_df['dayofweek_cos'] = np.cos(2 * np.pi * input_df.index.dayofweek / 7)
-        
         feature_order = ['CO2', '温度', '湿度', 'hour_sin', 'hour_cos', 'dayofweek_sin', 'dayofweek_cos']
         input_df_ordered = input_df[feature_order]
         scaled_data = scaler.transform(input_df_ordered)
-        
         reshaped_data = np.expand_dims(scaled_data, axis=0).astype(np.float32)
 
         # Step 3: TFLiteモデルで予測を実行
@@ -81,11 +67,9 @@ def main():
 
     except Exception as e:
         print(f"❌ 予測処理中にエラーが発生しました: {e}")
-        # エラーが発生した場合、ワークフローを失敗させる
         exit(1)
         
     print("--- 予測ジョブが正常に完了しました ---")
 
-# このスクリプトが直接実行された時だけ、main()関数を呼び出す
 if __name__ == "__main__":
     main()

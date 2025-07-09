@@ -1,6 +1,6 @@
-tflite-runtime
+tensorflow-cpu
 scikit-learn
-numpy
+numpy<2.0
 pandas
 joblib
 pytz
