@@ -3,7 +3,7 @@ name: Run Scheduled Prediction
 on:
   schedule:
     # 15分ごとに実行
-    - cron: '*/15 * * * *'
+    - cron: '*/5 * * * *'
   
   # 手動でも実行できるようにする
   workflow_dispatch:
