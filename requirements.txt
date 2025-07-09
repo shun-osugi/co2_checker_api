@@ -1,7 +1,6 @@
-fastapi
-uvicorn[standard]
-tensorflow-lite
+tflite-runtime
 scikit-learn
 numpy
 pandas
 joblib
+pytz

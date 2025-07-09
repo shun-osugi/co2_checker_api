@@ -9,10 +9,19 @@ on:
   workflow_dispatch:
 
 jobs:
-  trigger-prediction:
+  run-prediction:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Prediction Endpoint
-        run: >
-          curl -X POST "${{ secrets.RENDER_APP_URL }}/trigger-prediction" \
-          -H "X-Trigger-Secret: ${{ secrets.TRIGGER_SECRET_KEY }}"
+      - name: リポジトリのコードをチェックアウト
+        uses: actions/checkout@v4
+
+      - name: Python 3.10 をセットアップ
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 必要なライブラリをインストール
+        run: pip install -r requirements.txt
+
+      - name: 予測スクリプトを実行
+        run: python run_prediction.py
